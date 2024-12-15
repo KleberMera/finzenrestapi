@@ -33,6 +33,6 @@ class UserRepository implements UserRepositoryInterface
 
     public function delete($id)
     {
-        User::destroy($id);
+        return User::destroy($id);
     }
 }

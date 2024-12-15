@@ -13,7 +13,7 @@ class UpdateUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -27,7 +27,7 @@ class UpdateUserRequest extends FormRequest
             'name' => 'required',
             'last_name' => 'required',
             'username' => 'required|unique:users',
-            'user' => 'required',
+            'user' => 'required|unique:users',
             'email' => 'required|email|unique:users',
             'password' => 'required',
             'phone' => 'nullable',
@@ -39,7 +39,7 @@ class UpdateUserRequest extends FormRequest
     {
         throw new HttpResponseException(response()->json([
             'success'   => false,
-            'message'   => 'Validation errors',
+            'message'   => 'Se encontraron errores de validación',
             'data'      => $validator->errors()
         ]));
     }
