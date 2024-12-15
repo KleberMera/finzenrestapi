@@ -1,67 +1,86 @@
 <?php
 
-namespace App\Http\Controller\Apis;
+namespace App\Http\Controllers\Api;
 
+use App\Classes\ApiResponseClass;
 use App\Http\Controllers\Controller;
-use App\Models\Categories;
 use App\Http\Requests\StoreCategoriesRequest;
 use App\Http\Requests\UpdateCategoriesRequest;
+use App\Http\Resources\CategoriesResource;
+use App\Interfaces\CategoriesRepositoryInterface;
+use Illuminate\Support\Facades\DB;
 
 class CategoriesController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    private CategoriesRepositoryInterface $categoriesRepositoryInterface;
+
+    public function __construct(CategoriesRepositoryInterface $categoriesRepositoryInterface)
+    {
+        $this->categoriesRepositoryInterface = $categoriesRepositoryInterface;
+    }
+
+
     public function index()
     {
-        //
+        $data = $this->categoriesRepositoryInterface->index();
+
+        return ApiResponseClass::sendResponse(CategoriesResource::collection($data), '', 200);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreCategoriesRequest $request)
     {
-        //
+        $data = [
+            'user_id' => $request->user_id,
+            'name' => $request->name,
+            'description' => $request->description,
+        ];
+
+
+        DB::beginTransaction();
+        try {
+            $user = $this->categoriesRepositoryInterface->store($data);
+            DB::commit();
+            return ApiResponseClass::sendResponse(new CategoriesResource($user), 'Categoría ' . $data['name'] . ' creada con éxito', 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return  ApiResponseClass::rollback($e);
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Categories $categories)
+    public function show($id)
     {
-        //
+        $category =  $this->categoriesRepositoryInterface->getById($id);
+        return  ApiResponseClass::sendResponse(new CategoriesResource($category), '', 200);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Categories $categories)
+
+
+
+    public function update(UpdateCategoriesRequest $request, $id)
     {
-        //
+        $data = [
+            'user_id' => $request->user_id,
+            'name' => $request->name,
+            'description' => $request->description,
+        ];
+
+        DB::beginTransaction();
+        try {
+            $category = $this->categoriesRepositoryInterface->update($data, $id);
+            DB::commit();
+            return  ApiResponseClass::sendResponse(null, 'Usuario actualizado con exito', 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return  ApiResponseClass::rollback($e);
+        }
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateCategoriesRequest $request, Categories $categories)
-    {
-        //
-    }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Categories $categories)
+    public function destroy($id)
     {
-        //
+        $this->categoriesRepositoryInterface->delete($id);
+
+        return ApiResponseClass::sendResponse('Product Delete Successful', '', 204);
     }
 }

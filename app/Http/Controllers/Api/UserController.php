@@ -8,7 +8,6 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Interfaces\UserRepositoryInterface;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
