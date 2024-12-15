@@ -8,6 +8,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Interfaces\UserRepositoryInterface;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
@@ -59,6 +60,14 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, $id)
     {
+        try {
+            $user = $this->userRepositoryInterface->getById($id);
+        } catch (ModelNotFoundException $e) {
+            return ApiResponseClass::sendResponse(null, 'Usuario no encontrado', 404);
+        }
+
+
+        // Datos a actualizar
         $data = [
             'rol_id' => $request->rol_id,
             'name' => $request->name,
@@ -71,22 +80,37 @@ class UserController extends Controller
             'status' => $request->status,
         ];
 
+        // Manejo de transacción
         DB::beginTransaction();
         try {
             $user = $this->userRepositoryInterface->update($data, $id);
             DB::commit();
-            return  ApiResponseClass::sendResponse(null, 'Usuario actualizado con exito', 201);
+            return ApiResponseClass::sendResponse(null, 'Usuario actualizado con éxito', 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            return  ApiResponseClass::rollback($e);
+            return ApiResponseClass::rollback($e);
         }
     }
 
+
     public function destroy($id)
     {
-        $this->userRepositoryInterface->delete($id);
-        return  ApiResponseClass::sendResponse(null, 'Usuario eliminado con exito', 204);
-    }
+        try {
+            $user = $this->userRepositoryInterface->getById($id);
+        } catch (ModelNotFoundException $e) {
+            return ApiResponseClass::sendResponse(null, 'Usuario no encontrado', 404);
+        }
 
-    //Login
+        DB::beginTransaction();
+        try {
+            // Eliminar el usuario
+            $this->userRepositoryInterface->delete($id);
+
+            DB::commit();
+            return ApiResponseClass::sendResponse(null, 'Usuario eliminado con éxito', 204);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ApiResponseClass::rollback($e, 'No se pudo eliminar el usuario. Inténtalo más tarde.');
+        }
+    }
 }
